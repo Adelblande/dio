@@ -1,66 +1,81 @@
-import { GetServerSideProps } from 'next'
-import { Header } from '../components/Header'
-import { Button, Flex, FormErrorMessage, Input, Stack } from '@chakra-ui/react'
-import { CardMessage } from '../components/CardMessage'
-import { useCallback, useEffect } from 'react'
-import { SubmitHandler, useForm } from 'react-hook-form'
-import * as yup from 'yup'
-import { yupResolver } from '@hookform/resolvers/yup'
+import { GetServerSideProps } from "next";
+import { Header } from "../components/Header";
+import {
+  Button,
+  Flex,
+  FormErrorMessage,
+  Input,
+  Stack,
+  FormControl,
+} from "@chakra-ui/react";
+import { CardMessage } from "../components/CardMessage";
+import { useCallback, useEffect } from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { send } from "process";
 
 interface IMessage {
-  email: string
-  message: string
-  created_at: string
+  id: string;
+  email: string;
+  message: string;
+  created_at: string;
 }
 
 interface ContatoProps {
-  messages: IMessage[]
+  messages: IMessage[];
 }
 
 type ContatoFormData = {
-  email: string
-  message: string
-}
+  email: string;
+  message: string;
+};
 
 const schema = yup.object().shape({
-  email: yup.string().required('E-mail obrigatório').email('E-mail inválido'),
-  message: yup.string().required('Mensagem obrigatório'),
-})
+  email: yup.string().required("E-mail obrigatório").email("E-mail inválido"),
+  message: yup.string().required("Mensagem obrigatório"),
+});
 
 export default function Contato({ messages }: ContatoProps) {
-  const {register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
-    resolver: yupResolver(schema)
-  })
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm({
+    resolver: yupResolver(schema),
+  });
 
-  const handleSendMessage: SubmitHandler<ContatoFormData> = useCallback(async (data) => {
-    const setting = {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    }
-    try {
-      const response = await fetch('http://localhost:5000/message', setting)
-      const sendMessage = await response.json()
-      if (sendMessage.id) {
-        messages.push({
-          email: sendMessage.email,
-          message: sendMessage.message,
-          created_at: sendMessage.created_at
-        })
+  const handleSendMessage: SubmitHandler<ContatoFormData> = useCallback(
+    async (data) => {
+      const setting = {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      };
+
+      try {
+        const response = await fetch("http://localhost:5000/message", setting);
+        const sendMessage = await response.json();
+        if (sendMessage.id) {
+          messages.push({
+            id: sendMessage.id,
+            email: sendMessage.email,
+            message: sendMessage.message,
+            created_at: sendMessage.created_at,
+          });
+        }
+
+        reset();
+      } catch (error) {
+        console.warn(error);
       }
-
-      reset()
-
-    } catch (error) {
-      console.warn(error)
-    }
-
-    console.log('envioo-->')
-  }, [errors])
-
+    },
+    [messages, reset]
+  );
 
   return (
     <Flex h="100vh" w="100vw" direction="column">
@@ -71,24 +86,26 @@ export default function Contato({ messages }: ContatoProps) {
         w="100%"
         maxWidth={460}
         mx="auto"
-        bg="grey.400"
+        bg="gray.800"
         p="8"
         borderRadius={8}
         flexDir="column"
       >
         <Stack spacing="4">
-          <Input name="email" placeholder="E-mail" {...register('email')} />
-          {!!errors.email && (
-            <FormErrorMessage>
-              {errors.email.message}
-            </FormErrorMessage>
-          )}
-          <Input name="message" placeholder="Mensagem" {...register('message')} />
-          {!!errors.message && (
-            <FormErrorMessage>
-              {errors.message.message}
-            </FormErrorMessage>
-          )}
+          <Input
+            name="email"
+            placeholder="E-mail"
+            {...register("email")}
+            focusBorderColor="pink.500"
+            border="2px"
+          />
+          <Input
+            name="message"
+            placeholder="Mensagem"
+            {...register("message")}
+            focusBorderColor="pink.500"
+            border="2px"
+          />
         </Stack>
         <Button
           type="submit"
@@ -99,7 +116,6 @@ export default function Contato({ messages }: ContatoProps) {
         >
           Enviar
         </Button>
-
       </Flex>
       <Flex
         w="100%"
@@ -107,27 +123,26 @@ export default function Contato({ messages }: ContatoProps) {
         mx="auto"
         mt="8"
         mb="10"
-        px={['10', '20']}
+        px={["10", "20"]}
         flexWrap="wrap"
       >
-        {
-          messages.map(message => (
-            <CardMessage {...message} />
-          ))
-        }
+        {messages.map((message) => (
+          <CardMessage {...message} key={`message-id-${message.id}`} />
+        ))}
       </Flex>
     </Flex>
-  )
+  );
 }
 
-export const getServerSideProps: GetServerSideProps<ContatoProps> = async () => {
-  const response = await fetch('http://localhost:5000/message')
-  const messages: IMessage[] = await response.json()
+export const getServerSideProps: GetServerSideProps<
+  ContatoProps
+> = async () => {
+  const response = await fetch("http://localhost:5000/message");
+  const messages: IMessage[] = await response.json();
 
   return {
     props: {
-      messages
-    }
-  }
-}
-
+      messages,
+    },
+  };
+};
